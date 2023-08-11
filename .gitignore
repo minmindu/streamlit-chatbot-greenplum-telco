@@ -1,3 +1,7 @@
+# Custom project specific
+.DS_Store
+data/invoice/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
