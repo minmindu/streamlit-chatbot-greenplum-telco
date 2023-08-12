@@ -108,32 +108,41 @@ where filename like 'invoice2102%';
 --###########################
 -- TODO
 
-CREATE TABLE telco_docs(
-  content TEXT
-);
-
-
-
-CREATE TABLE telco_documents (
+CREATE TABLE telco_doc (
   id bigserial primary key,
+  filename text,
   content text,
   embedding vector(1536)
 )
 DISTRIBUTED BY (id)
 ;
 
-CREATE INDEX ON telco_documents USING ivfflat (embedding vector_cosine_ops)
+CREATE INDEX ON telco_doc USING ivfflat (embedding vector_cosine_ops)
 with
   (lists = 300);
 
--- COPY data to table
+ANALYZE telco_doc;
 
-COPY telco_documents from '/home/gpadmin/telco_documents.csv' CSV HEADER DELIMITER '|' QUOTE '"' ;
+-- CREATE TABLE telco_documents (
+--   id bigserial primary key,
+--   content text,
+--   embedding vector(1536)
+-- )
+-- DISTRIBUTED BY (id)
+-- ;
 
-ANALYZE telco_documents;
+-- CREATE INDEX ON telco_documents USING ivfflat (embedding vector_cosine_ops)
+-- with
+--   (lists = 300);
+
+-- -- COPY data to table
+
+-- COPY telco_documents from '/home/gpadmin/telco_documents.csv' CSV HEADER DELIMITER '|' QUOTE '"' ;
+
+-- ANALYZE telco_documents;
 
 
-CREATE OR REPLACE FUNCTION match_documents (
+CREATE OR REPLACE FUNCTION match_docs (
     query_embedding VECTOR(1536),
     match_threshold FLOAT,
     match_count INT
@@ -141,6 +150,7 @@ CREATE OR REPLACE FUNCTION match_documents (
 
   RETURNS TABLE (
     id BIGINT,
+    filename TEXT,
     content TEXT,
     similarity FLOAT
   )
@@ -149,9 +159,10 @@ CREATE OR REPLACE FUNCTION match_documents (
 
     SELECT
       documents.id,
+      documents.filename,
       documents.content,
       1 - (documents.embedding <=> query_embedding) AS similarity
-    FROM telco_documents documents
+    FROM telco_doc documents
     WHERE 1 - (documents.embedding <=> query_embedding) > match_threshold
     ORDER BY similarity DESC
     LIMIT match_count;
@@ -176,7 +187,7 @@ CREATE OR REPLACE FUNCTION get_embeddings(content text)
 
   $$ LANGUAGE PLPYTHON3U;
 
-CREATE FUNCTION ask_openai(user_input text, document text)
+CREATE OR REPLACE FUNCTION ask_openai(user_input text, document text)
   RETURNS TEXT
   AS
   $$
@@ -199,9 +210,7 @@ CREATE FUNCTION ask_openai(user_input text, document text)
 
     {docs_text}
 
-    Keep your answer direct and concise. Provide code snippets where applicable.
-    The question is about a Greenplum / PostgreSQL database. You can enrich the answer with other
-    Greenplum or PostgreSQL-relevant details if applicable.""".format(search_string=search_string, docs_text=docs_text)
+    Keep your answer direct and concise. Provide code snippets where applicable.""".format(search_string=search_string, docs_text=docs_text)
 
     messages.append({"role": "user", "content": prompt})
 
@@ -210,7 +219,7 @@ CREATE FUNCTION ask_openai(user_input text, document text)
 
   $$ LANGUAGE PLPYTHON3U;
 
-
+-- Note: in order to ask_openai(), we will need to feed it the best document (meaning limit 1)
 CREATE OR REPLACE FUNCTION intelligent_ai_assistant(
     user_input TEXT
   )
@@ -224,29 +233,9 @@ CREATE OR REPLACE FUNCTION intelligent_ai_assistant(
     SELECT
       ask_openai(user_input,
                 (SELECT t.content
-                  FROM match_documents(
+                  FROM match_docs(
                         (SELECT get_embeddings(user_input)) ,
                           0.8,
-                          1) t
-                  )
-      );
-$$;
-
-
-CREATE OR REPLACE FUNCTION intelligent_ai_assistant_bills(
-    user_input TEXT
-  )
-  RETURNS TABLE (
-    content TEXT
-  )
-  LANGUAGE SQL STABLE
-  AS $$
-    SELECT
-      ask_openai(user_input,
-                (SELECT t.content
-                  FROM match_documents(
-                        (SELECT get_embeddings(user_input)) ,
-                          0.1,
                           1) t
                   )
       );
