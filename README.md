@@ -16,11 +16,11 @@ Before starting the project, please ensure your system meet the below prerequisi
 
 1. Download the source code from Github
 
-  `git clone https://github.com/ahmedrachid/streamlit-chatbot-greenplum.git`
+  `git clone https://github.com/minmindu/streamlit-chatbot-greenplum-telco.git`
 
 2. Go to the project repository
 
-  `cd streamlit-chatbot-greenplum`
+  `cd streamlit-chatbot-greenplum-telco`
 
 3. Open the app.py file and change the database credential if required
 
@@ -31,15 +31,15 @@ Change this section: `postgres://<db-user>:<password>@<db-ip>:<db-port>/<databas
 
 4. Build the docker image. The below command is to build a docker image with name streamline-chatbot-greenplum with the latest version
 
-  `docker build -t streamlit-chatbot-greenplum .`
+  `docker build -t streamlit-chatbot-greenplum-telco .`
 
-5. Verify image `streamlit-chatbot-greenplum` is built successfully
+5. Verify image `streamlit-chatbot-greenplum-telco` is built successfully
 
   `docker images`
 
-6. Run the docker image streamlit-chatbot-Greenplum
+6. Run the docker image streamlit-chatbot-greenplum-telco
 
-  `docker run -p 8501:8501 streamlit-chatbot-greenplum`
+  `docker run -p 8501:8501 streamlit-chatbot-greenplum-telco`
 
 7. Go to the browser and open the web link. 
 Note: the IP address is the IP that your VM / local env uses. For example, `http://35.189.1.42:8501`

@@ -33,16 +33,16 @@ if 'total_cost' not in st.session_state:
     st.session_state['total_cost'] = 0.0
 
 st.sidebar.title("Sidebar")
-model_name = st.sidebar.radio("Choose a method:", ("Similarity Search using pgvector extension", "OpenAI model (without GP context)", "OpenAI model (summarized + enriched context)"))
+model_name = st.sidebar.radio("Choose a method:", ( "OpenAI model (without custom context)", "OpenAI model (summarized + enriched custom context)", "Similarity Search using pgvector extension"))
 counter_placeholder = st.sidebar.empty()
 clear_button = st.sidebar.button("Clear Conversation", key="clear")
 
 print('Model name:', model_name)
 if model_name == "Similarity Search using pgvector extension":
     function = "match_docs"
-elif model_name == "OpenAI model (without GP context)":
+elif model_name == "OpenAI model (without custom context)":
     function="ask_openai"
-else:
+elif model_name == "OpenAI model (summarized + enriched custom context)":
     function = "intelligent_ai_assistant"
 
 # reset everything
@@ -68,8 +68,8 @@ def generate_response(prompt):
         response = pd.read_sql("select intelligent_ai_assistant('{input_text}');".format(input_text=prompt), conn).values[0][0]
     elif function=="ask_openai":
         response = pd.read_sql("select ask_openai('{input_text}');".format(input_text=prompt), conn).values[0][0]
-    else:
-        response = pd.read_sql("select t.filename, t.content from match_docs((select get_embeddings('{input_text}')), 0.765, 100) t;".format(input_text=prompt), conn).values[0][0]
+    elif function == "match_docs":
+        response = pd.read_sql("select t.filename from match_docs((select get_embeddings('{input_text}')), 0.765, 100) t;".format(input_text=prompt), conn)
 
     st.session_state['messages'].append({"role": "assistant", "content": response})
 
