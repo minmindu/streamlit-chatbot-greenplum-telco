@@ -39,7 +39,7 @@ clear_button = st.sidebar.button("Clear Conversation", key="clear")
 
 print('Model name:', model_name)
 if model_name == "Similarity Search using pgvector extension":
-    function = "match_documents"
+    function = "match_docs"
 elif model_name == "OpenAI model (without GP context)":
     function="ask_openai"
 else:
@@ -69,7 +69,7 @@ def generate_response(prompt):
     elif function=="ask_openai":
         response = pd.read_sql("select ask_openai('{input_text}');".format(input_text=prompt), conn).values[0][0]
     else:
-        response = pd.read_sql("select t.content from match_documents((select get_embeddings('{input_text}')), 0.1, 1) t;".format(input_text=prompt), conn).values[0][0]
+        response = pd.read_sql("select t.filename, t.content from match_docs((select get_embeddings('{input_text}')), 0.765, 100) t;".format(input_text=prompt), conn).values[0][0]
 
     st.session_state['messages'].append({"role": "assistant", "content": response})
 
