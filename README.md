@@ -5,7 +5,7 @@
 Before starting the project, please ensure your system meet the below prerequisite.
 
 * Docker installed before running this app. Please run the below command to verify Docker is installed in your system
-</br>
+
   `docker --version`
 
   If it is not installed, please refer to this [Docker installation guide](https://docs.docker.com/engine/install/).
