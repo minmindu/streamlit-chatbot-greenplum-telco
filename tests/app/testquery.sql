@@ -11,14 +11,16 @@ However, I want to pay as less as possible.') ;
 select * from intelligent_ai_assistant('give me all invoices over $100') ;
 
 -- 17 invoices
-select t.filename, t.content from match_docs((select get_embeddings('give me all invoices over $100')), 0.765, 100) t;
+select t.filename, t.content from match_docs(
+  (select get_embeddings('give me all invoices over $100')), 0.765, 100) t;
 
 -- 0 result
-select t.filename, t.content from match_docs((select get_embeddings('give me all customer names who have invoices over $100')), 0.765, 100) t;
+select t.filename, t.content from match_docs((select 
+get_embeddings('give me all customer names who have invoices over $100')), 0.765, 100) t;
 
 -- 17 invoices and customer names
 select distinct t.filename, cust_full_name, email_address, full_address from match_docs_customer_info 
-((select get_embeddings('give me all invoices over $100')), 0.765, 100)t
+((select get_embeddings('give me all customer names who have invoices over $100')), 0.75, 100)t
 order by 2, 1;
 
 
