@@ -5,7 +5,7 @@ import psycopg2
 import pandas as pd
 import os
 
-conn = psycopg2.connect("postgres://gpadmin:changeme@localhost:5432/warehouse")
+conn = psycopg2.connect("postgres://gpadmin:changeme@35.201.17.251:5432/telco")
 
 # Setting page title and header
 st.set_page_config(page_title="Tanzu AI-Assistant: Greenplum-pgVector", page_icon=":robot_face:")
@@ -33,7 +33,7 @@ if 'total_cost' not in st.session_state:
     st.session_state['total_cost'] = 0.0
 
 st.sidebar.title("Sidebar")
-model_name = st.sidebar.radio("Choose a method:", ( "OpenAI model (without custom context)", "OpenAI model (summarized + enriched custom context)", "Similarity Search using pgvector extension"))
+model_name = st.sidebar.radio("Choose a method:", ( "OpenAI model (without custom context)", "OpenAI model (summarized + enriched custom context)", "Similarity Search using pgvector extension", "Similarity Search using pgvector extension (with customer info join)"))
 counter_placeholder = st.sidebar.empty()
 clear_button = st.sidebar.button("Clear Conversation", key="clear")
 
