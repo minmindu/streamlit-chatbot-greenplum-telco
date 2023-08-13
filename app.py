@@ -44,6 +44,8 @@ elif model_name == "OpenAI model (without custom context)":
     function="ask_openai"
 elif model_name == "OpenAI model (summarized + enriched custom context)":
     function = "intelligent_ai_assistant"
+elif model_name == "Similarity Search using pgvector extension (with customer info join)":
+    function = "match_docs_customer_info"
 
 # reset everything
 if clear_button:
@@ -69,8 +71,9 @@ def generate_response(prompt):
     elif function=="ask_openai":
         response = pd.read_sql("select ask_openai('{input_text}');".format(input_text=prompt), conn).values[0][0]
     elif function == "match_docs":
-        response = pd.read_sql("select t.filename from match_docs((select get_embeddings('{input_text}')), 0.765, 100) t;".format(input_text=prompt), conn)
-
+        response = (pd.read_sql("select t.filename from match_docs((select get_embeddings('{input_text}')), 0.765, 100) t;".format(input_text=prompt), conn)).to_markdown()
+    elif function == "match_docs_customer_info":
+        response == (pd.read_sql("select distinct t.filename, cust_full_name, email_address, full_address from match_docs_customer_info ((select get_embeddings('{input_text}')), 0.765, 100) t order by 2,1;".format(input_text=prompt), conn)).to_markdown()
     st.session_state['messages'].append({"role": "assistant", "content": response})
 
     return response

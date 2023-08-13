@@ -169,6 +169,75 @@ CREATE OR REPLACE FUNCTION match_docs (
 
   $$ LANGUAGE SQL STABLE;
 
+
+
+--drop  FUNCTION match_docs_customer_info;
+
+CREATE OR REPLACE FUNCTION match_docs_customer_info (
+    query_embedding VECTOR(1536),
+    match_threshold FLOAT,
+    match_count INT
+  )
+
+  RETURNS TABLE (
+    id BIGINT,
+    filename TEXT,
+    content TEXT,
+    similarity FLOAT, 
+    customer_sk INT, 
+    cust_first_name TEXT, 
+    cust_last_name TEXT,
+    cust_full_name TEXT,
+    email_address TEXT,
+    addr_street_number TEXT, 
+    addr_street_name TEXT, 
+    addr_street_type TEXT, 
+    addr_suite_number TEXT, 
+    addr_city TEXT, 
+    addr_county TEXT, 
+    addr_state TEXT, 
+    addr_zip TEXT, 
+    addr_country text,
+    full_address TEXT
+  )
+
+  AS $$
+
+    SELECT
+      documents.id,
+      documents.filename,
+      documents.content,
+      1 - (documents.embedding <=> query_embedding) AS similarity,
+      c.c_customer_sk, 
+      c.c_first_name::TEXT, 
+      c.c_last_name::TEXT,
+      (c.c_first_name || ' '|| c.c_last_name)::text as cust_full_name,
+      c.c_email_address::TEXT,
+      addr.ca_street_number::TEXT, 
+      addr.ca_street_name::TEXT, 
+      addr.ca_street_type::TEXT, 
+      addr.ca_suite_number::TEXT, 
+      addr.ca_city::TEXT, 
+      addr.ca_county::TEXT, 
+      addr.ca_state::TEXT, 
+      addr.ca_zip::TEXT, 
+      addr.ca_country::text,
+      (ca_suite_number ||', ' || ca_street_number ||' ' || ca_street_name ||' '||ca_street_type || ', ' || ca_city||', '|| ca_county ||', ' || ca_state ||' ' || ca_zip ||', ' || ca_country)::TEXT as full_address
+    FROM telco_doc documents
+    -- join to customer table
+    INNER JOIN customer_invoice ci 
+    ON documents.filename = ci.filename 
+    INNER JOIN customer c 
+    ON ci.customer_sk = c.c_customer_sk
+    LEFT JOIN customer_address addr 
+    ON c.c_current_addr_sk = addr.ca_address_sk
+    WHERE 1 - (documents.embedding <=> query_embedding) > match_threshold
+    ORDER BY similarity DESC
+    LIMIT match_count;
+
+  $$ LANGUAGE SQL STABLE;
+
+
 CREATE OR REPLACE FUNCTION get_embeddings(content text)
   RETURNS VECTOR
   AS
@@ -187,6 +256,37 @@ CREATE OR REPLACE FUNCTION get_embeddings(content text)
 
   $$ LANGUAGE PLPYTHON3U;
 
+-- this method will take 1 parameter. It purely replies on openAI existing knowledge base.
+CREATE OR REPLACE FUNCTION ask_openai(user_input text)
+  RETURNS TEXT
+  AS
+  $$
+
+    import openai
+    import os
+
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    search_string = user_input
+    --docs_text = document
+
+    messages = [{"role": "system",
+                  "content": "You concisely answer questions based on text that is provided to you."}]
+
+    prompt = """Answer the user's prompt or question:
+
+    {search_string}
+
+    Keep your answer direct and concise. Provide code snippets where applicable.""".format(search_string=search_string)
+
+    messages.append({"role": "user", "content": prompt})
+
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
+    return response.choices[0]["message"]["content"]
+
+  $$ LANGUAGE PLPYTHON3U;
+
+
+-- this method will take 2 parameters with the best custom document
 CREATE OR REPLACE FUNCTION ask_openai(user_input text, document text)
   RETURNS TEXT
   AS
